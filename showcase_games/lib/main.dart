@@ -1,6 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:showcase_games/provider/item_provider.dart';
 import 'model/item.dart';
-import 'api.dart';
 import 'web_game.dart';
 
 void main() => runApp(MyApp());
@@ -9,7 +11,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: MyHomePage(),
+      home: MultiProvider(providers: [
+        FutureProvider(builder: (context) => ItemProvider().loadItemData()),
+      ], child: MyHomePage()),
     );
   }
 }
@@ -22,32 +26,18 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var listItem = List<Item>();
 
-  _getItems() {
-    API.getItems().then((response) {
-      setState(() {
-        Iterable list = response;
-        listItem = list.map((model) => Item.fromJson(model)).toList();
-      });
-    });
-  }
-
-  @override
-  void initState() {
-    _getItems();
-    super.initState();
-  }
-
   @override
   void dispose() {
     super.dispose();
   }
 
   Future refreshList() async {
-    _getItems();
+    print("Refresh");
   }
 
   @override
   Widget build(BuildContext context) {
+    var _items = Provider.of<List<Item>>(context);
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Color(0xFF79BE29),
@@ -59,37 +49,75 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ],
         ),
-        body: RefreshIndicator(
-          onRefresh: refreshList,
-          child: Container(
-            color: Colors.black26,
-            child: ListView.builder(
-              physics: BouncingScrollPhysics(),
-              itemCount: listItem.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  margin: EdgeInsets.all(5.0),
-                  decoration: BoxDecoration(
-                    color: Colors.amberAccent,
-                    borderRadius: BorderRadius.circular(25.0),
+        body: _items == null
+            ? Center(
+                child: CupertinoActivityIndicator(
+                  radius: 20,
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: refreshList,
+                child: Container(
+                  color: Colors.black26,
+                  child: ListView.builder(
+                    physics: BouncingScrollPhysics(),
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        margin: EdgeInsets.all(5.0),
+                        decoration: BoxDecoration(
+                          color: Colors.black26,
+                          borderRadius: BorderRadius.circular(25.0),
+                        ),
+                        height: 200,
+                        child: Stack(
+                          children: <Widget>[
+                            Center(
+                                child: CircularProgressIndicator(
+                              backgroundColor: Colors.black54,
+                            )),
+                            getImage(_items, index),
+                            getIdAndAlbumId(_items, index),
+                            getDescription(context, _items, index),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                  height: 200,
-                  child: Stack(
-                    children: <Widget>[
-                      getImageItem(index),
-                      getIdAndAlbumId(index),
-                      getDecription(index),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ));
+                ),
+              ));
+  }
+
+  // Get Id and Album Id
+  Align getIdAndAlbumId(List<Item> _items, int index) {
+    return Align(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text("Album Id: " + "${_items[index].id}"),
+            Text("Id: " + "${_items[index].albumId}"),
+          ],
+        ),
+      ),
+      alignment: Alignment.topLeft,
+    );
+  }
+
+  // Get image
+  Container getImage(List<Item> _items, int index) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(25.0),
+        image: DecorationImage(
+            fit: BoxFit.fill, image: NetworkImage(_items[index].url)),
+      ),
+    );
   }
 
   // Get description
-  Align getDecription(int index) {
+  Align getDescription(BuildContext context, List<Item> _items, int index) {
     return Align(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -98,7 +126,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             Container(
                 width: MediaQuery.of(context).size.width / 2,
-                child: Text("${listItem[index].title}")),
+                child: Text("${_items[index].title}")),
             RaisedButton(
               color: Color(0xFF79BE29),
               onPressed: () {
@@ -116,34 +144,6 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       alignment: Alignment.bottomLeft,
-    );
-  }
-
-  // get Id and album Id
-  Align getIdAndAlbumId(int index) {
-    return Align(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text("Album Id: " + "${listItem[index].id}"),
-            Text("Id: " + "${listItem[index].albumId}"),
-          ],
-        ),
-      ),
-      alignment: Alignment.topLeft,
-    );
-  }
-
-  // Get Image
-  Container getImageItem(int index) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(25.0),
-        image: DecorationImage(
-            fit: BoxFit.fill, image: NetworkImage(listItem[index].url)),
-      ),
     );
   }
 }
