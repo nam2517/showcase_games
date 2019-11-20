@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:showcase_games/provider/item_provider.dart';
+import './provider/item_provider.dart';
 import 'model/item.dart';
-import 'web_game.dart';
+import './web_view_page/web_game.dart';
 
 void main() => runApp(MyApp());
 
@@ -24,20 +24,18 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  var listItem = List<Item>();
-
   @override
   void dispose() {
     super.dispose();
   }
 
-  Future refreshList() async {
-    print("Refresh");
-  }
-
   @override
   Widget build(BuildContext context) {
     var _items = Provider.of<List<Item>>(context);
+
+    // Refresh page
+    Future refreshList() async {}
+
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Color(0xFF79BE29),
@@ -58,7 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
             : RefreshIndicator(
                 onRefresh: refreshList,
                 child: Container(
-                  color: Colors.black26,
+                  color: Colors.white30,
                   child: ListView.builder(
                     physics: BouncingScrollPhysics(),
                     itemCount: _items.length,
